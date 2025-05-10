@@ -12,16 +12,17 @@ const Navbar = () => {
         {/* Logo */}
         <div className="flex items-center gap-2">
           <img src="robot.png" alt="Logo" className="h-15" />
-          <h1 className="font-bold text-lg">Resume Ai</h1>
+          <h1 className="font-bold text-lg">Pinkyy Ai</h1>
         </div>
 
-        {/* Desktop Links */}
+        {/* navbar links */}
         <div className="hidden md:flex items-center space-x-6">
           <Link to="/" className="hover:text-gray-300">Home</Link>
           <Link to="/resume" className="hover:text-gray-300">Resume</Link>
           <Link to="/resources" className="hover:text-gray-300">Resources</Link>
-          <button className='bg-pink-600/50  text-white px-4 py-2 rounded-md cursor-pointer hover:bg-pink-400'>Sign Up</button>
-          <button className='border border-gray-700 text-gray-500 px-4 py-2 rounded-md cursor-pointer hover:bg-gray-100 hover:text-black'>Login</button>
+          <Link to="/signup"> <button className='bg-pink-600/50  text-white px-4 py-2 rounded-md cursor-pointer hover:bg-pink-400'>Sign Up</button> </Link>
+          <Link to="/login"> <button className='border border-gray-700 text-gray-500 px-4 py-2 rounded-md cursor-pointer hover:bg-gray-100 hover:text-black'>Login</button>  </Link>
+          
         </div>
 
         {/* Mobile Menu Button */}
@@ -47,8 +48,8 @@ const Navbar = () => {
           <Link to="/resume" onClick={() => setMenuOpen(false)} className="hover:text-gray-300 border-b border-pink-300 pb-2">Resume</Link>
           <Link to="/resources" onClick={() => setMenuOpen(false)} className="hover:text-gray-300 border-b border-pink-300 pb-2">Resources</Link>
           <div className='flex gap-5'>
-          <button className='bg-pink-600/50  text-white px-4 py-2 rounded-md cursor-pointer hover:bg-pink-400'>Sign Up</button>
-          <button className='border border-gray-700 text-gray-500 px-4 py-2 rounded-md cursor-pointer hover:bg-gray-100 hover:text-black'>Login</button>
+          <Link to="/signup"> <button className='bg-pink-600/50  text-white px-4 py-2 rounded-md cursor-pointer hover:bg-pink-400'>Sign Up</button> </Link>
+          <Link to="/login"> <button className='border border-gray-700 text-gray-500 px-4 py-2 rounded-md cursor-pointer hover:bg-gray-100 hover:text-black'>Login</button>  </Link>
           </div>
         </div>
       </div>
