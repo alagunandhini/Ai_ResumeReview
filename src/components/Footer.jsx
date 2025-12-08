@@ -8,11 +8,10 @@ const Footer = () => {
                
                 <div className=" flex gap-2 justify-center items-center">
                 <img src="robot.png" alt="Logo" className="h-12 w-12 object-contain" />
-                <h1 className="font-bold text-xl text-gray-700">Resume Ai</h1>
+                <h1 className="font-bold text-xl text-gray-700">Pinkyy Ai</h1>
                 </div>
              
-              <p className="leading-relaxed text-gray-600 mb-3">Instant, Smart Resume Feedback
-              Upload your resume and let our AI enhance it! It's fast, reliable, and completely free—kickstart your career today!</p>
+              <p className="leading-relaxed text-gray-600 mb-3"> Upload your resume and get AI-generated HR questions with sample answers. Practice mock interviews, get feedback, and boost your confidence start preparing today!</p>
             </div>
   
             {/* Quick Links */}

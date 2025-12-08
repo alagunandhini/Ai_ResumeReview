@@ -10,14 +10,14 @@ return(
     <>
     <Navbar/>
     {/* section-1 */}
-    <div className="bg-white w-full min-h-screen grid grid-cols-1 md:grid-cols-2  gap-8  py-8 md:py-4 border-b border-gray-300">
+    <div className="bg-white w-full min-h-[90vh] grid grid-cols-1 md:grid-cols-2  gap-8  py-8 md:py-4 border-b border-gray-300">
 {/* left text */}
 
         <div className=" flex flex-col justify-center p-6 lg:p-3 max-w-xl mx-auto">
-            <h1 className=" font-bold text-4xl text-gray-500 mb-5 text-center md:text-left">AI Resume Review: Instant Feedback for Your Career Success!</h1>
+            <p className="font-bold text-pink-600/50 text-xl"  style={{ fontFamily: '"Cherry Bomb One", system-ui' }}> Pinky Ai</p>
+            <h1 className=" font-bold text-4xl text-gray-500 mb-5 text-center md:text-left">Instant Interview Prep from Your Resume! </h1>
             <div className="flex flex-col items-center md:items-start ">
-            <p className="leading-relaxed text-gray-600 mb-3">Instant, Smart Resume Feedback
-             Upload your resume and let our AI enhance it! Whether you're a fresher or a pro, get quick, smart insights on content, format, and keywords. It's fast, reliable, and completely free—kickstart your career today!</p>
+            <p className="leading-relaxed text-gray-600 mb-3">Upload your resume to get resume-based interview questions and start practicing the smart way. Experience voice-based mock interviews and receive instant AI feedback that helps you improve quickly and perform confidently in placements!</p>
               <button className="bg-pink-600/50 border border-gray-300 rounded-full py-2 w-40  text-white mt-2 cursor-pointer hover:bg-pink-400">Get Started</button>
             </div>
             
@@ -34,7 +34,7 @@ return(
 
         {/* section-2 (steps)*/}
 <div className=" min-h-[80vh] py-6 ">
-    <h1 className="font-bold text-2xl md:text-3xl  text-center mb-20 text-gray-500 mt-5">Steps To Use Resume Ai  </h1>
+    <h1 className="font-bold text-2xl md:text-3xl  text-center mb-20 text-gray-500 mt-5">Steps To Use Pinkyy Ai  </h1>
     <div className="grid grid-cols-1 md:grid-cols-3 max-w-7xl mx-auto px-4 gap-20">
         {/* step-1 */}
         <div className="bg-white flex flex-col justify-center  p-6 shadow-lg rounded-t-4xl rounded-s-4xl rounded-e-sm relative">
@@ -43,7 +43,7 @@ return(
            <img src="step1.png" className="h-32 w-32 border-12 border-pink-300/10 bg-white rounded-full p-3 mt-10"/>
            </div>
                <h1 className="font-bold text-xl text-gray-700 mt-6"> Upload Your Resume</h1>
-               <p className="text-gray-400 mt-2">Submit your latest resume for review and feedback</p>
+               <p className="text-gray-400 mt-2">Get your resume analyzed for personalized interview prep.</p>
         </div>
 
         {/* step-2 */}
@@ -53,8 +53,8 @@ return(
            <img src="steps2.png" className="h-32 w-32 object-cover border border-pink-300/10 bg-pink-300/10 rounded-full p-3 mt-10"/>
            </div>
              
-               <h1 className="font-bold text-xl text-gray-700 mt-6"> Resume Analysis</h1>
-               <p className="text-gray-400 mt-2">Our experts will review your resume carefully.</p>
+               <h1 className="font-bold text-xl text-gray-700 mt-6"> AI Analysis</h1>
+               <p className="text-gray-400 mt-2">Receive resume-based technical & HR interview questions.</p>
         </div>
 
         {/* step-3 */}
@@ -63,8 +63,8 @@ return(
            <div className="max-w-4xl mx-auto ">
            <img src="step3.png" className="h-32 w-32 border border-pink-300/10 bg-pink-300/10 rounded-full p-3 mt-10"/>
            </div>
-               <h1 className="font-bold text-xl text-gray-700 mt-6"> Get Feedback</h1>
-               <p className="text-gray-400 mt-2">Receive personalized feedback to improve your resume.</p>
+               <h1 className="font-bold text-xl text-gray-700 mt-6"> Practice & Improve</h1>
+               <p className="text-gray-400 mt-2">Answer with your voice and get instant AI feedback.</p>
         </div>
 
 
@@ -84,16 +84,15 @@ return(
         </div>
 {/* right-content */}
         <div className="flex flex-col justify-center items-center md:items-start px-10 md:px-0">
-            <h2 className="font-bold text-3xl text-gray-700 mb-3">AI-Powered Resume Review</h2>
+            <h2 className="font-bold text-3xl text-gray-700 mb-3">AI-Powered Interview Assistant</h2>
             <p className=" text-gray-600 text-lg mb-5 ">
-            Our advanced AI technology analyzes your resume to ensure it meets modern industry standards.
-            It checks for formatting, keyword optimization, readability, and structure to help you stand out among applicants.
+            Upload your resume and get tailored HR questions with sample answers. Prepare smartly with instant AI feedback and voice-based mock interviews to boost your confidence and land your dream job.
             </p>
             <ul className="list-disc list-inside text-gray-600 space-y-2">
-                <li>Get instant feedback on your resume quality.</li>
-                <li>Optimize for ATS (Applicant Tracking Systems).</li>
-                <li>Highlight your skills and achievements effectively.</li>
-                <li>Increase your chances of landing interviews.</li>
+                <li>Get instant feedback on your resume and key skills.</li>
+                <li>Receive personalized HR interview questions.</li>
+                <li>Practice answers via voice and get AI-reviewed suggestions.</li>
+                <li>Build confidence and improve your chances of success.</li>
 
             </ul>
 
@@ -107,8 +106,8 @@ return(
 {/* section-4 (premium)*/}
 <div className="bg-pink-300/10 min-h-[40vh] mb-5 grid grid-cols-1 md:grid-cols-2   flex justify-center items-center">
 <div className="p-8 md:p-0 mx-0 md:ms-50 ">
-    <h1 className="text-3xl font-bold mb-3 text-gray-600">Create Your AI-Powered Resume</h1>
-    <p className="mb-4"> Get your resume professionally created and optimized with AI. Stand out to recruiters and land your dream job faster.</p>
+    <h1 className="text-3xl font-bold mb-3 text-gray-600">Premium AI Tools - Elevate Your Career</h1>
+    <p className="mb-4">Prepare smarter for interviews with AI. Go Premium for personalized help and exclusive tools to get ahead</p>
     <div>  <button className="bg-pink-600/50 border border-gray-300 rounded-full py-2 w-40  text-white mt-2 cursor-pointer hover:bg-pink-400 ">Go To Premium</button></div>
    
 </div>
@@ -125,11 +124,11 @@ return(
         {/* Question-1 */}
         <div className="bg-white shadow-md  p-5 rounded-lg border border-gray-300 mt-5">
             <button className="flex justify-between items-center w-full text-left " onClick={()=>setOpen(open===1 ? null:1)}>
-                <h3 className="text-lg font-semibold text-gray-500"> Is the resume review free to use?</h3>
+                <h3 className="text-lg font-semibold text-gray-500"> Is this tool free to use?</h3>
                 <span className="text-2xl text-pink-300">{open===1?"×":"+"}</span>
             </button>
             {open===1&& (
-                <p className="text-gray-600 mt-2"> Yes! Our basic AI resume review is completely free. Premium features will be available soon.
+                <p className="text-gray-600 mt-2"> Yes! Our basic AI resume based interview prep is completely free. Premium features will be available soon.
             </p>
             )}
 
@@ -142,7 +141,7 @@ return(
                 <span className="text-2xl text-pink-300">{open===2?"×":"+"}</span>
             </button>
             {open===2&& (
-                <p className="text-gray-600 mt-2"> You can upload resumes in PDF, DOCX, and TXT formats.</p>
+                <p className="text-gray-600 mt-2"> You should upload resumes in PDF only</p>
             )}
 
         </div>
@@ -154,7 +153,7 @@ return(
                 <span className="text-2xl text-pink-300">{open===3?"×":"+"}</span>
             </button>
             {open===3&& (
-                <p className="text-gray-600 mt-2"> Our AI provides 90% accurate feedback based on latest ATS and HR standards.</p>
+                <p className="text-gray-600 mt-2"> Our AI provides 90% accurate feedback</p>
             )}
 
         </div>
@@ -162,11 +161,11 @@ return(
          {/* Question-4 */}
          <div className="bg-white shadow-md  p-5 rounded-lg border border-gray-300 mt-5">
             <button className="flex justify-between items-center w-full text-left " onClick={()=>setOpen(open===4 ? null:4)}>
-                <h3 className="text-lg font-semibold text-gray-500"> Can I download the reviewed resume?</h3>
+                <h3 className="text-lg font-semibold text-gray-500"> Can I practice multiple times?</h3>
                 <span className="text-2xl text-pink-300">{open===4?"×":"+"}</span>
             </button>
             {open===4&& (
-                <p className="text-gray-600 mt-2"> Yes, you can download a detailed feedback report after the review is complete</p>
+                <p className="text-gray-600 mt-2"> Yes! You can repeat mock interviews and get AI feedback each time to improve.</p>
             )}
 
         </div>

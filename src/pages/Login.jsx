@@ -1,5 +1,12 @@
-import { Link } from 'react-router-dom';
+import { Link,useNavigate } from 'react-router-dom';
+import axios from 'axios'
+import { useState } from 'react';
+
 const Login=()=>{
+    const [email,setEmail]=useState('')
+    const [password,setPassword]=useState('')
+    const [error,setError]=useState('')
+    const navigate=useNavigate()
     return(
         <>
           <div className=" min-h-[100vh] bg-white w-full grid grid-cols-1 md:grid-cols-2">
@@ -35,7 +42,7 @@ const Login=()=>{
                 <label className='absolute left-4 top-4 text-gray-500 text-base transition-all duration-200 peer-placeholder-shown:top-4 peer-placeholder-shown:text-base peer-focus:top-1 peer-focus:text-[12px] pointer-events-none  ' htmlFor="pass">Password</label>
                 </div>
                 <div className='flex items-center justify-center'>
-                <button className=' w-80 bg-pink-300 text-white px-6 py-3 rounded-full cursor-pointer hover:bg-pink-300 transition-all duration-200 mb-4'>Sign Up</button>
+                <button className=' w-80 bg-pink-300 text-white px-6 py-3 rounded-full cursor-pointer hover:bg-pink-300 transition-all duration-200 mb-4'>Sign In</button>
                 </div>
                 <div className='flex justify-center items-center'>
                 <hr className=' flex-grow border-t text-gray-700 my-4'></hr>

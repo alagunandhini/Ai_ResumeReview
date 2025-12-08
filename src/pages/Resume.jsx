@@ -70,8 +70,8 @@ const Resume=()=>{
     </div>
     {/* right */}
     <div className=" md:col-span-4 flex flex-col items-center  p-10">
-        <h1 className="font-bold text-4xl mb-2">Resume Analyzer</h1>
-    <h1 className="font-semibold text-2xl text-center mb-8 text-gray-600">Get Instant Feedback on Your Resume</h1>
+        <h1 className="font-bold text-4xl mb-2">Resume-Based Interview Preparation</h1>
+    <h1 className="font-semibold text-2xl text-center mb-8 text-gray-600">Get AI-generated interview questions</h1>
         <div {...getRootProps()} className=" border-2 border-dashed border-pink-300 w-full h-[40vh] flex flex-col justify-center items-center hover:bg-pink-100/50 transition">
         <input {...getInputProps()}/> 
         <img src="border.png" className="w-32"/>
@@ -80,7 +80,7 @@ const Resume=()=>{
         </div>
         {file && <p className="mt-4 text-gray-600 "> {file.name} uploaded Succesfully</p>}
 
-        <button className="bg-pink-300 text-white px-6 py-5 rounded-md cursor-pointer mt-5 hover:bg-pink-400  "> Analyze the Resume</button>
+        <button className="bg-pink-300 text-white px-6 py-5 rounded-md cursor-pointer mt-5 hover:bg-pink-400  ">Generate Now </button>
         
 
 

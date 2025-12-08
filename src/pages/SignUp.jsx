@@ -61,7 +61,7 @@ return(
             </form>
 
             
-               <p className='mt-14 text-center text-sm mb-15'>By clicking “Sign In” you agree to our<br/>
+               <p className='mt-14 text-center text-sm mb-15'>By clicking “Sign Up” you agree to our<br/>
               <span className='text-pink-300 border-b cursor-pointer'>Terms and Conditions </span>and  <span className='text-pink-300 border-b  cursor-pointer'>Privacy Policy</span>.</p>
 
         </div>
