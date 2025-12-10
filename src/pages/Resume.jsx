@@ -4,6 +4,7 @@ import { useCallback, useState } from "react"
 // import * as pdfjsLib from 'pdfjs-dist';
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { FaHome } from "react-icons/fa";
 
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 
@@ -88,6 +89,8 @@ const analyzeInterview = async () => {
 
       if (data.success) {
     try {
+        console.log("BACKEND RAW RESPONSE:", data.analysis);
+
         const parsedQuestions = JSON.parse(data.analysis); // convert string to object
         setQuestions(parsedQuestions); // now each section is an array
         setShowQuestionsUI(true);
@@ -103,12 +106,33 @@ const analyzeInterview = async () => {
         alert("Something went wrong");
     }
 };
+const sections = ["HR", "Technical", "Stress", "Scenario"];
 
+const [activeSection, SetActiveSection] =useState("HR");
+
+// forward button logic
+const goNext=()=>{
+    const index= sections.indexOf(activeSection);
+    if(index<sections.length-1){
+        SetActiveSection(sections[index+1]);
+
+    }
+}
+
+// Backward button logic
+const goPrev=()=>{
+    const index= sections.indexOf(activeSection);
+    if(index>0){
+        SetActiveSection(sections[index-1]);
+
+    }
+}
 
 
     return(
         <>
-        <Navbar/>
+         {!showQuestionsUI && ( 
+        <Navbar/> )}
         <div className="min-h-screen">
 
 
@@ -137,73 +161,93 @@ const analyzeInterview = async () => {
 </>
         )}
 
-        {showQuestionsUI && (
-    <div className="col-span-6 p-6 md:p-12">
+{showQuestionsUI && (
+  <div className="col-span-6 min-h-screen bg-white p-6 md:pb-0">
 
-        <h2 className="text-3xl font-bold mb-6">Your AI Interview Questions</h2>
+    {/* TOP TABS */}
+ {/* TOP TABS – FULL WIDTH BEAUTIFUL UI */}
 
-        <div className="space-y-6 bg-gradient-to-b from-pink-50 to-white p-6 rounded-xl shadow-xl border border-pink-300">
-          <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white py-10 px-4 flex justify-center">
-    <div className="w-full max-w-8xl bg-white rounded-3xl shadow-xl p-8 border border-pink-200">
-        
-        {/* Page Title */}
-        <h2 className="text-3xl font-bold text-pink-600 mb-8 text-center">
-          Alright! I’ve generated your questions. Let’s dive in!
-        </h2>
 
-        {/* Questions List */}
-        <div className="space-y-8">
-            {Object.entries(questions).map(([section, qArray]) => (
-                <div key={section}>
-                    
-                    {/* Section Title */}
-                    <h3 className="text-2xl font-semibold text-gray-700 mb-4">
-                        📌 {section}
-                    </h3>
+  <div className="w-full flex items-center justify-between">
 
-                    <div className="space-y-5">
-                        {qArray.map((item, index) => (
-                            <div key={index} className="animate-fade space-y-3">
-                                
-                                {/* Question Bubble */}
-                                <div className="bg-pink-100 border border-pink-200 p-5 rounded-2xl shadow-sm">
-                                    <p className="text-lg font-semibold text-pink-700">
-                                        Q{index + 1}. {item.q}
-                                    </p>
-                                </div>
-
-                                {/* Answer Bubble */}
-                                <div className="bg-white border border-pink-200 p-5 rounded-2xl shadow-sm ml-4">
-                                    <p className="text-gray-700 leading-relaxed">
-                                        {item.a}
-                                    </p>
-                                </div>
-
-                            </div>
-                        ))}
-                    </div>
-
-                </div>
-            ))}
-        </div>
-
-        {/* Button */}
-        <div className="flex justify-center mt-10">
-            <button
-                onClick={() => setShowQuestionsUI(false)}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-6 rounded-full shadow-sm transition"
-            >
-                🔙 Back
-            </button>
-        </div>
-    </div>
+    {/* Center Tabs */}
+    <div className="flex-1 flex justify-center">
+      <div className="flex gap-4 bg-pink-50 px-4 py-2 rounded-2xl shadow-inner">
+        {sections.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => SetActiveSection(tab)}
+            className={`px-36 py-2 rounded-xl font-semibold text-sm md:text-base transition-all duration-300
+              ${
+                activeSection === tab
+                  ? "bg-pink-300 text-white shadow-md"
+                  : "bg-white text-gray-700 hover:bg-pink-200"
+              }
+            `}
+          >
+            {tab.toUpperCase()}
+          </button>
+        ))}
 </div>
 
-        </div>
+
+  
+  </div>
+
+</div>
+
+
+
+
+    {/* QUESTION BOX */}
+    <div className="mt-10 flex justify-center gap-10">
+        <div className=" h-[72vh] flex flex-col items-center justify-center ">
+          
+            <img  src="robot.png" className="w-70 h-70"/>
+              <p className="text-center">Hi, Pinkyy here..! 💗 <br/> Let’s practice!</p>
+            
+                    <button   className="bg-pink-300 text-white px-8 py-4 rounded-full cursor-pointer mt-5 hover:bg-pink-400  ">Start Practice</button>
+             </div>
+      <div className="w-[75%] h-[72vh] border-2 border-gray-400 rounded-xl p-6 overflow-y-scroll bg-white shadow-md">
+
+  <h2 className="text-2xl font-bold text-pink-400 mb-4 text-center">
+    {activeSection} Questions 
+  </h2>
+
+  {(() => {
+    const qArray = questions[activeSection] || [];
+
+    return (
+      <div className="space-y-8">
+        {qArray.map((item, idx) => (
+          <div key={idx} className="mb-6">
+            <p className="font-bold text-gray-800">
+              Q{idx + 1}. {item.q}
+            </p>
+            <p className="mt-2 text-gray-600 pl-4">{item.a}</p>
+          </div>
+        ))}
+      </div>
+    );
+  })()}
+</div>
 
     </div>
+      <button
+      onClick={() => setShowQuestionsUI(false)}
+      className=" ms-350 mt-4 px-6 py-2 rounded-full text-white bg-pink-300 shadow hover:bg-pink-200 transition"
+      title="Go Home"
+    >
+       Back 
+    </button>
+
+
+
+
+  </div>
 )}
 
+
         
 
 
@@ -213,13 +257,14 @@ const analyzeInterview = async () => {
 
 
     </div>
+   
 </div>
 
       
 
         
-        
-        <Footer/>
+         {!showQuestionsUI && ( 
+        <Footer/> )}
         </>
     )
 
