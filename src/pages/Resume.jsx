@@ -5,6 +5,11 @@ import { useCallback, useState } from "react"
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { useEffect } from "react";
+import { useRef } from "react";
+import { FaMicrophone } from "react-icons/fa";
+import { FaStop } from "react-icons/fa";
+
+
 
 
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
@@ -116,7 +121,10 @@ const sections = ["HR", "Technical", "Stress", "Scenario"];
 const [activeSection, SetActiveSection] =useState("HR");
 const [startPractice, setStartPractice] = useState(false);
 const [currentIndex, setCurrentIndex] = useState(0);
+const [showExitModal, setShowExitModal] = useState(false);
 
+
+// automatic voice read 
 useEffect(()=>{
 if(startPractice){
   const question= questions[activeSection]?.[currentIndex]?.q;
@@ -125,6 +133,44 @@ if(startPractice){
 }
 
 },[currentIndex,activeSection,startPractice]);
+
+const [isRecording, setIsRecording] = useState(false);
+const mediaRecorderRef = useRef(null);
+const audioChunks = useRef([]);
+
+const startRecording = async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+  mediaRecorderRef.current = new MediaRecorder(stream);
+  audioChunks.current = [];
+
+  mediaRecorderRef.current.ondataavailable = (e) => {
+    audioChunks.current.push(e.data);
+  };
+
+  mediaRecorderRef.current.onstop = () => {
+    const audioBlob = new Blob(audioChunks.current, { type: "audio/webm" });
+    console.log("Recorded audio:", audioBlob);
+      // 1. Pinkyy speaks positive feedback
+  speakText(" hmmmmm........ good!, next question");
+
+  // 2. Wait 2 seconds → move to next question
+  setTimeout(() => {
+    next();
+  }, 3500);
+
+    // TODO: send to backend later
+  };
+
+  mediaRecorderRef.current.start();
+  setIsRecording(true);
+};
+
+const stopRecording = () => {
+  mediaRecorderRef.current.stop();
+  setIsRecording(false);
+};
+
 
 
 // forward button logic
@@ -305,13 +351,13 @@ const prev =()=>{
    {/* Page 3 - Practice Question */}
 
     {startPractice && (
-  <div className="w-full min-h-screen flex flex-col items-center justify-between pb-10">
-     <div>
-      <p className=" w-full text-xl font-bold bg-pink-300 p-2 px-180 text-gray-50">{activeSection} Round</p>
+  <div className="w-full min-h-screen flex flex-col items-center justify-between  ">
+     <div className="w-full text-center">
+      <p className="  text-xl font-bold bg-pink-300 p-2 text-gray-50">{activeSection} Round</p>
       </div>
 
     {/* TOP SECTION */}
-    <div className="w-full flex items-center justify-between px-10">
+    <div className="w-full flex items-center justify-between px-10 pt-4 ">
       <p className="text-xl font-semibold text-gray-600">
         {currentIndex + 1}/{questions[activeSection]?.length}
       </p>
@@ -339,16 +385,36 @@ const prev =()=>{
       </div>
 
       {/* QUESTION BOX */}
-      <div className=" flex justify-center w-200">
+      <div className=" flex flex-col gap-20 w-200">
         <div className="border border-gray-300 rounded-tl-3xl rounded-tr-3xl rounded-br-3xl 
                   rounded-bl-md px-20 py-4 w-full h-20 text-center shadow-sm bg-white">
           <p className="text-xl text-center font-semibold text-gray-800">
             Q{currentIndex + 1}. {questions[activeSection][currentIndex]?.q}
           </p>
         </div>
+              {/* Voice Wave Animation */}
+  {isRecording && (
+    <div className="voice-wave mt-30 me-18 flex justify-center  ">
+         <div className="wave-bar"></div>
+      <div className="wave-bar"></div>
+      <div className="wave-bar"></div>
+      <div className="wave-bar"></div>
+      <div className="wave-bar"></div>
+       <div className="wave-bar"></div>
+      <div className="wave-bar"></div>
+      <div className="wave-bar"></div>
+      <div className="wave-bar"></div>
+      <div className="wave-bar"></div>
+    </div>
+  )}
       </div>
 
+      
+
     </div>
+    
+
+    
 
     {/* BOTTOM BUTTONS */}
     <div className="flex items-center justify-center mt-20 gap-20">
@@ -363,12 +429,19 @@ const prev =()=>{
       </button>
 
       {/* SPEAK NOW BUTTON */}
-      <button
-       
-        className="w-28 h-28 rounded-full border-4 border-pink-300 flex items-center justify-center hover:bg-pink-100 shadow-lg"
-      >
-        <div className="w-14 h-14 rounded-full bg-pink-300"></div>
-      </button>
+  <button
+  onClick={isRecording ? stopRecording : startRecording}
+  className={`w-28 h-28 rounded-full flex items-center justify-center shadow-xl transition-all
+    ${isRecording ? "bg-gray-500 animate-pulse" : "bg-pink-300 hover:bg-pink-400"}`}
+>
+  {isRecording ? (
+    <FaStop size={40} className="text-white" />
+  ) : (
+    <FaMicrophone size={50} className="text-white" />
+  )}
+</button>
+
+
 
       {/* NEXT */}
       <button
@@ -378,7 +451,17 @@ const prev =()=>{
         Next
       </button>
 
+      
+
     </div>
+    <button
+  onClick={() => setShowExitModal(true)}
+  className="ms-350 mb-2 px-6 py-2 rounded-full text-white bg-pink-300 shadow hover:bg-pink-200 transition"
+  title="Go Home"
+>
+  Exit
+</button>
+
 
   </div>
 )}
@@ -387,6 +470,40 @@ const prev =()=>{
     
    
 </div>
+{showExitModal && (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="bg-white p-8 rounded-xl shadow-2xl text-center max-w-md w-full border border-pink-300">
+      
+      <h2 className="text-2xl font-bold text-gray-800 mb-4">Exit Practice?</h2>
+      <p className="text-gray-600 mb-8">
+        Are you sure you want to exit the practice session?
+      </p>
+
+      <div className="flex justify-center gap-6">
+        
+        <button
+          onClick={() => setShowExitModal(false)}
+          className="px-6 py-2 rounded-full border border-gray-400 text-gray-600 hover:bg-gray-100"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={() => {
+            setStartPractice(false);
+            setShowQuestionsUI(true);
+            setShowExitModal(false);
+          }}
+          className="px-6 py-2 rounded-full bg-pink-300 text-white hover:bg-pink-400"
+        >
+          Yes, Exit
+        </button>
+
+      </div>
+    </div>
+  </div>
+)}
+
 
 
 
