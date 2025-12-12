@@ -4,17 +4,21 @@ import { useCallback, useState } from "react"
 // import * as pdfjsLib from 'pdfjs-dist';
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { FaHome } from "react-icons/fa";
+import { useEffect } from "react";
+
 
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 
 // Set workerSrc to CDN URL
+//pdfjs-dist needs a web worker to process PDFs in a background thread.
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 
 
 
-//pdfjs-dist needs a web worker to process PDFs in a background thread.
+
+
+
 
 
 
@@ -113,6 +117,15 @@ const [activeSection, SetActiveSection] =useState("HR");
 const [startPractice, setStartPractice] = useState(false);
 const [currentIndex, setCurrentIndex] = useState(0);
 
+useEffect(()=>{
+if(startPractice){
+  const question= questions[activeSection]?.[currentIndex]?.q;
+  if(question) speakText(question);
+
+}
+
+},[currentIndex,activeSection,startPractice]);
+
 
 // forward button logic
 // const goNext=()=>{
@@ -132,7 +145,7 @@ const [currentIndex, setCurrentIndex] = useState(0);
 //     }
 // }
 
-// TEXT TO SPEECH
+
 // TEXT TO SPEECH WITH FEMALE VOICE
 const speakText = (text) => {
   if (!text) return;
@@ -351,9 +364,7 @@ const prev =()=>{
 
       {/* SPEAK NOW BUTTON */}
       <button
-        onClick={() =>
-          speakText(questions[activeSection][currentIndex]?.q)
-        }
+       
         className="w-28 h-28 rounded-full border-4 border-pink-300 flex items-center justify-center hover:bg-pink-100 shadow-lg"
       >
         <div className="w-14 h-14 rounded-full bg-pink-300"></div>
