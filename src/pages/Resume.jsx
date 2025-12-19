@@ -8,6 +8,8 @@ import { useEffect } from "react";
 import { useRef } from "react";
 import { FaMicrophone } from "react-icons/fa";
 import { FaStop } from "react-icons/fa";
+import { v4 as uuidv4 } from "uuid";
+
 
 
 
@@ -68,8 +70,6 @@ const Resume=()=>{
             
         }
         reader.readAsArrayBuffer(file)
-
-
      }
 
     const [questions, setQuestions] = useState([]); // store generated questions
@@ -122,6 +122,10 @@ const [activeSection, SetActiveSection] =useState("HR");
 const [startPractice, setStartPractice] = useState(false);
 const [currentIndex, setCurrentIndex] = useState(0);
 const [showExitModal, setShowExitModal] = useState(false);
+const [sessionId, setSessionId] = useState(uuidv4());
+
+
+
 
 
 // automatic voice read 
@@ -148,19 +152,51 @@ const startRecording = async () => {
     audioChunks.current.push(e.data);
   };
 
-  mediaRecorderRef.current.onstop = () => {
-    const audioBlob = new Blob(audioChunks.current, { type: "audio/webm" });
-    console.log("Recorded audio:", audioBlob);
-      // 1. Pinkyy speaks positive feedback
-  speakText(" hmmmmm........ good!, next question");
+ 
+mediaRecorderRef.current.onstop = async () => { 
+  const audioBlob = new Blob(audioChunks.current, { type: "audio/webm" });
 
-  // 2. Wait 2 seconds → move to next question
+  const formData = new FormData();
+  formData.append("audio", audioBlob, "answer.webm");
+  formData.append("question", questions[activeSection][currentIndex]?.q);
+    formData.append("sessionId", sessionId);
+
+  // Send audio to backend (do NOT wait)
+  await fetch("http://localhost:3000/upload-audio", {
+    method: "POST",
+    body: formData,
+  }).catch(err => {
+    console.error("Backend audio save failed", err);
+  });
+// const isLastSection = activeSection === sections[sections.length - 1];
+const isLastQuestion =
+  currentIndex === questions[activeSection].length - 1;
+
+if ( isLastQuestion) {
+  speakText("Interview completed. Generating final feedback.");
+
+  await fetch("http://localhost:3000/end-session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId }),
+  });
+
+  console.log("Interview finished");
+  return;
+}
+
+
+
+  //  Default interviewer response
+  speakText("Okay, good. Next question.");
+
+  // Natural pause → then next question
   setTimeout(() => {
     next();
-  }, 3500);
+  }, 2500);
+};
 
-    // TODO: send to backend later
-  };
+
 
   mediaRecorderRef.current.start();
   setIsRecording(true);
@@ -362,12 +398,30 @@ const prev =()=>{
         {currentIndex + 1}/{questions[activeSection]?.length}
       </p>
 
-      <button
-        onClick={next}
-        className="px-6 py-2 border border-pink-300 text-pink-500 rounded-xl hover:bg-pink-100"
-      >
-        Skip
-      </button>
+     <button
+  onClick={() => {
+    // stop recording if active
+    if (isRecording) {
+      mediaRecorderRef.current?.stop();
+      setIsRecording(false);
+    }
+
+    // stop any speaking voice
+    window.speechSynthesis.cancel();
+
+    // NEW interview session
+    setSessionId(uuidv4());
+
+    // reset practice state
+    setCurrentIndex(0);
+    SetActiveSection("HR");  // optional but recommended
+    setStartPractice(true);
+  }}
+  className="ms-250 mb-2 px-6 py-2 rounded-full text-white bg-pink-300 shadow hover:bg-pink-200 transition"
+>
+  Start Again
+</button>
+
     </div>
 
    
@@ -431,8 +485,12 @@ const prev =()=>{
       {/* SPEAK NOW BUTTON */}
   <button
   onClick={isRecording ? stopRecording : startRecording}
+
   className={`w-28 h-28 rounded-full flex items-center justify-center shadow-xl transition-all
-    ${isRecording ? "bg-gray-500 animate-pulse" : "bg-pink-300 hover:bg-pink-400"}`}
+    ${isRecording 
+      ? "bg-pink-400 animate-pulse ring-8 ring-pink-300/50" 
+      : "bg-pink-300 hover:bg-pink-400"}
+  `}
 >
   {isRecording ? (
     <FaStop size={40} className="text-white" />
@@ -444,16 +502,19 @@ const prev =()=>{
 
 
       {/* NEXT */}
-      <button
-        onClick={next}
-        className="px-10 py-3 border border-gray-400 rounded-xl text-gray-700 hover:bg-gray-100"
-      >
-        Next
-      </button>
+     <button onClick={next} disabled={isRecording}
+  className={`px-10 py-3 border rounded-xl text-gray-700
+    ${isRecording 
+      ? "opacity-40 cursor-not-allowed bg-gray-100" 
+      : "hover:bg-gray-100"} `}> Next </button>
+
 
       
 
     </div>
+
+
+
     <button
   onClick={() => setShowExitModal(true)}
   className="ms-350 mb-2 px-6 py-2 rounded-full text-white bg-pink-300 shadow hover:bg-pink-200 transition"
@@ -488,6 +549,7 @@ const prev =()=>{
           Cancel
         </button>
 
+       
         <button
           onClick={() => {
             setStartPractice(false);
