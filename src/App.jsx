@@ -11,6 +11,7 @@ import Resources from './pages/Resources';
 import Footer from './components/Footer';
 import SignUp from './pages/SignUp';
 import Login from './pages/Login';
+import Feedback from './pages/Feedback';
 
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
         <Route path='/resources' element={<Resources/>}/>
         <Route path='/signup' element={<SignUp/>}/>
         <Route path='/login' element={<Login/>}/>
+        <Route path='/feedback/:sessionId' element={<Feedback/>}/>
 
 
       </Routes>

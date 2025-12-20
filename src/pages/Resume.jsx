@@ -9,6 +9,8 @@ import { useRef } from "react";
 import { FaMicrophone } from "react-icons/fa";
 import { FaStop } from "react-icons/fa";
 import { v4 as uuidv4 } from "uuid";
+import { useNavigate } from "react-router-dom";
+
 
 
 
@@ -33,6 +35,7 @@ const Resume=()=>{
     
     const [resumeText,setResumeText]=useState()
     const [file,setFile]=useState(null) //to acess the file uploaded
+    const navigate =useNavigate();
     const onDrop=useCallback((acceptedFiles)=>{
         var file=acceptedFiles[0];// stores the first file in arrary
         setFile(file);// save the file in file variable
@@ -162,7 +165,7 @@ mediaRecorderRef.current.onstop = async () => {
     formData.append("sessionId", sessionId);
 
   // Send audio to backend (do NOT wait)
-  await fetch("http://localhost:3000/upload-audio", {
+   fetch("http://localhost:3000/upload-audio", {
     method: "POST",
     body: formData,
   }).catch(err => {
@@ -172,28 +175,13 @@ mediaRecorderRef.current.onstop = async () => {
 const isLastQuestion =
   currentIndex === questions[activeSection].length - 1;
 
-if ( isLastQuestion) {
-  speakText("Interview completed. Generating final feedback.");
-
-  await fetch("http://localhost:3000/end-session", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sessionId }),
-  });
-
-  console.log("Interview finished");
-  return;
+if (isLastQuestion) {
+  await endInterview();
+} else {
+  speakText("Okay good. Next question.");
+  setTimeout(() => next(), 2000);
 }
 
-
-
-  //  Default interviewer response
-  speakText("Okay, good. Next question.");
-
-  // Natural pause → then next question
-  setTimeout(() => {
-    next();
-  }, 2500);
 };
 
 
@@ -204,28 +192,26 @@ if ( isLastQuestion) {
 
 const stopRecording = () => {
   mediaRecorderRef.current.stop();
+  mediaRecorderRef.current.stream
+    .getTracks()
+    .forEach(track => track.stop()); // 🔴 IMPORTANT
   setIsRecording(false);
 };
 
 
+const endInterview = async () => {
+  speakText("Thank you. Generating your feedback.");
 
-// forward button logic
-// const goNext=()=>{
-//     const index= sections.indexOf(activeSection);
-//     if(index<sections.length-1){
-//         SetActiveSection(sections[index+1]);
+  await fetch("http://localhost:3000/end-session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId }),
+  });
 
-//     }
-// }
+  navigate(`/feedback/${sessionId}`);
+};
 
-// Backward button logic
-// const goPrev=()=>{
-//     const index= sections.indexOf(activeSection);
-//     if(index>0){
-//         SetActiveSection(sections[index-1]);
 
-//     }
-// }
 
 
 // TEXT TO SPEECH WITH FEMALE VOICE
@@ -415,7 +401,7 @@ const prev =()=>{
     // reset practice state
     setCurrentIndex(0);
     SetActiveSection("HR");  // optional but recommended
-    setStartPractice(true);
+   
   }}
   className="ms-250 mb-2 px-6 py-2 rounded-full text-white bg-pink-300 shadow hover:bg-pink-200 transition"
 >
