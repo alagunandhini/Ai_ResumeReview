@@ -10,6 +10,8 @@ import { FaMicrophone } from "react-icons/fa";
 import { FaStop } from "react-icons/fa";
 import { v4 as uuidv4 } from "uuid";
 import { useNavigate } from "react-router-dom";
+import TransitionLoader from "../components/TransitionLoader";
+
 
 
 
@@ -78,6 +80,9 @@ const Resume=()=>{
     const [questions, setQuestions] = useState([]); // store generated questions
     const [loading, setLoading] = useState(false);
     const [showQuestionsUI, setShowQuestionsUI] = useState(false);
+    const [transitionLoading, setTransitionLoading] = useState(false);
+const [transitionText, setTransitionText] = useState("");
+
 
 
 const analyzeInterview = async () => {
@@ -86,7 +91,9 @@ const analyzeInterview = async () => {
         return;
     }
 
-    setLoading(true);
+ // STEP A: show loader
+              setTransitionText("Generating interview questions…");
+              setTransitionLoading(true);
 
     try {
         const response = await fetch("http://localhost:3000/analyze", {
@@ -98,7 +105,8 @@ const analyzeInterview = async () => {
         });
 
         const data = await response.json();
-        setLoading(false);
+       
+
 
       if (data.success) {
     try {
@@ -106,7 +114,11 @@ const analyzeInterview = async () => {
 
         const parsedQuestions = JSON.parse(data.analysis); // convert string to object
         setQuestions(parsedQuestions); // now each section is an array
-        setShowQuestionsUI(true);
+  
+            
+                 setTransitionLoading(false);
+                  setShowQuestionsUI(true);
+                     
     } catch (err) {
         console.error("Failed to parse AI response:", err);
         alert("AI response is invalid");
@@ -144,6 +156,8 @@ if(startPractice){
 const [isRecording, setIsRecording] = useState(false);
 const mediaRecorderRef = useRef(null);
 const audioChunks = useRef([]);
+const [isAnalyzing, setIsAnalyzing] = useState(false);
+
 
 const startRecording = async () => {
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -156,33 +170,51 @@ const startRecording = async () => {
   };
 
  
-mediaRecorderRef.current.onstop = async () => { 
+mediaRecorderRef.current.onstop = async () => {
   const audioBlob = new Blob(audioChunks.current, { type: "audio/webm" });
 
   const formData = new FormData();
   formData.append("audio", audioBlob, "answer.webm");
   formData.append("question", questions[activeSection][currentIndex]?.q);
-    formData.append("sessionId", sessionId);
+  formData.append("sessionId", sessionId);
 
-  // Send audio to backend (do NOT wait)
-   fetch("http://localhost:3000/upload-audio", {
-    method: "POST",
-    body: formData,
-  }).catch(err => {
-    console.error("Backend audio save failed", err);
-  });
-// const isLastSection = activeSection === sections[sections.length - 1];
-const isLastQuestion =
-  currentIndex === questions[activeSection].length - 1;
+  const isLastQuestion =
+    currentIndex === questions[activeSection].length - 1;
 
-if (isLastQuestion) {
+  try {
+    if (isLastQuestion) {
+
+       setIsAnalyzing(true);
+      speakText("Great! Analyzing your interview. Please wait.");
+      // ✅ WAIT for LAST answer to save
+      const res = await fetch("http://localhost:3000/upload-audio", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+     if ( data.success) {
   await endInterview();
-} else {
-  speakText("Okay good. Next question.");
-  setTimeout(() => next(), 2000);
 }
 
+    } else {
+      // 🚀 Fire & forget for normal questions
+      fetch("http://localhost:3000/upload-audio", {
+        method: "POST",
+        body: formData,
+      }).catch(err =>
+        console.error("Backend audio save failed", err)
+      );
+
+      speakText("Okay good. Next question.");
+      setTimeout(() => next(), 1200);
+    }
+  } catch (err) {
+    console.error("Audio upload failed", err);
+  }
 };
+
 
 
 
@@ -289,7 +321,7 @@ const prev =()=>{
         {file && <p className="mt-4 text-gray-600 "> {file.name} uploaded Succesfully</p>}
 
         <button  onClick={analyzeInterview} className="bg-pink-300 text-white px-6 py-5 rounded-md cursor-pointer mt-5 hover:bg-pink-400  ">Generate Now </button>
-        {loading && <p className="mt-4 text-gray-600">Generating questions...</p>}
+       
         </div>
          </div>
 </>
@@ -331,7 +363,15 @@ const prev =()=>{
             <img  src="robot.png" className="w-70 h-70"/>
               <p className="text-center">Hi, Pinkyy here..! 💗 <br/> Let’s practice!</p>
             
-                    <button onClick={() => setStartPractice(true)}  className="bg-pink-300 text-white px-8 py-4 rounded-full cursor-pointer mt-5 hover:bg-pink-400  ">Start Practice</button>
+                    <button  onClick={() => {
+    setTransitionText("Preparing practice mode…");
+    setTransitionLoading(true);
+
+    setTimeout(() => {
+      setTransitionLoading(false);
+      setStartPractice(true);
+    }, 3000);
+  }}  className="bg-pink-300 text-white px-8 py-4 rounded-full cursor-pointer mt-5 hover:bg-pink-400  ">Start Practice</button>
              </div>
       <div className="w-[75%] h-[72vh] border-2 border-gray-400 rounded-xl p-6 overflow-y-scroll bg-white shadow-md">
 
@@ -386,23 +426,24 @@ const prev =()=>{
 
      <button
   onClick={() => {
-    // stop recording if active
+  setTransitionText("Restarting interview session…");
+  setTransitionLoading(true);
+
+  setTimeout(() => {
+    setTransitionLoading(false);
+
     if (isRecording) {
       mediaRecorderRef.current?.stop();
       setIsRecording(false);
     }
 
-    // stop any speaking voice
     window.speechSynthesis.cancel();
-
-    // NEW interview session
     setSessionId(uuidv4());
-
-    // reset practice state
     setCurrentIndex(0);
-    SetActiveSection("HR");  // optional but recommended
-   
-  }}
+    SetActiveSection("HR");
+  }, 2000);
+}}
+
   className="ms-250 mb-2 px-6 py-2 rounded-full text-white bg-pink-300 shadow hover:bg-pink-200 transition"
 >
   Start Again
@@ -517,6 +558,40 @@ const prev =()=>{
     
    
 </div>
+
+{transitionLoading && (
+  <TransitionLoader text={transitionText} />
+)}
+
+
+{isAnalyzing && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-pink-100/80 backdrop-blur-md">
+    
+    <div className="bg- rounded-3xl p-10 shadow-2xl flex flex-col items-center gap-6 animate-fadeIn">
+      
+      {/* Robot */}
+      <img src="/robot.png" className="w-32 animate-bounceSlow" />
+
+      {/* Text */}
+      <h2 className="text-2xl font-bold text-pink-400">
+        Analyzing Your Interview
+      </h2>
+
+      {/* Dots loader */}
+      <div className="flex gap-2">
+        <span className="dot"></span>
+        <span className="dot delay-200"></span>
+        <span className="dot delay-400"></span>
+      </div>
+
+      <p className="text-gray-500 text-sm">
+      Please Wait.....
+      </p>
+    </div>
+  </div>
+)}
+
+
 {showExitModal && (
   <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
     <div className="bg-white p-8 rounded-xl shadow-2xl text-center max-w-md w-full border border-pink-300">
@@ -537,11 +612,19 @@ const prev =()=>{
 
        
         <button
-          onClick={() => {
-            setStartPractice(false);
-            setShowQuestionsUI(true);
-            setShowExitModal(false);
-          }}
+         onClick={() => {
+  setShowExitModal(false);
+
+  setTransitionText("Returning to questions…");
+  setTransitionLoading(true);
+
+  setTimeout(() => {
+    setTransitionLoading(false);
+    setStartPractice(false);
+    setShowQuestionsUI(true);
+  }, 3000);
+}}
+
           className="px-6 py-2 rounded-full bg-pink-300 text-white hover:bg-pink-400"
         >
           Yes, Exit
