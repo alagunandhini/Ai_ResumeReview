@@ -11,10 +11,7 @@ import { FaStop } from "react-icons/fa";
 import { v4 as uuidv4 } from "uuid";
 import { useNavigate } from "react-router-dom";
 import TransitionLoader from "../components/TransitionLoader";
-
-
-
-
+import InterviewCompleted from "../components/InterviewCompleted";
 
 
 
@@ -23,13 +20,6 @@ import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 // Set workerSrc to CDN URL
 //pdfjs-dist needs a web worker to process PDFs in a background thread.
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-
-
-
-
-
-
-
 
 
 
@@ -82,6 +72,12 @@ const Resume=()=>{
     const [showQuestionsUI, setShowQuestionsUI] = useState(false);
     const [transitionLoading, setTransitionLoading] = useState(false);
 const [transitionText, setTransitionText] = useState("");
+const [showCompletionScreen, setShowCompletionScreen] = useState(false);
+const [questionStatus, setQuestionStatus] = useState({});
+const [showFeedback, setShowFeedback] = useState(false);
+
+
+
 
 
 
@@ -96,7 +92,7 @@ const analyzeInterview = async () => {
               setTransitionLoading(true);
 
     try {
-        const response = await fetch("http://localhost:3000/analyze", {
+        const response = await fetch("http://localhost:3006/analyze", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -138,6 +134,7 @@ const [startPractice, setStartPractice] = useState(false);
 const [currentIndex, setCurrentIndex] = useState(0);
 const [showExitModal, setShowExitModal] = useState(false);
 const [sessionId, setSessionId] = useState(uuidv4());
+const [feedback,setFeedback]=useState(null);
 
 
 
@@ -172,6 +169,13 @@ const startRecording = async () => {
  
 mediaRecorderRef.current.onstop = async () => {
   const audioBlob = new Blob(audioChunks.current, { type: "audio/webm" });
+  const key = `${activeSection}-${currentIndex}`;
+
+setQuestionStatus(prev => ({
+  ...prev,
+  [key]: "answered"
+}));
+
 
   const formData = new FormData();
   formData.append("audio", audioBlob, "answer.webm");
@@ -187,7 +191,7 @@ mediaRecorderRef.current.onstop = async () => {
        setIsAnalyzing(true);
       speakText("Great! Analyzing your interview. Please wait.");
       // ✅ WAIT for LAST answer to save
-      const res = await fetch("http://localhost:3000/upload-audio", {
+      const res = await fetch("http://localhost:3006/upload-audio", {
         method: "POST",
         body: formData,
       });
@@ -200,7 +204,7 @@ mediaRecorderRef.current.onstop = async () => {
 
     } else {
       // 🚀 Fire & forget for normal questions
-      fetch("http://localhost:3000/upload-audio", {
+      fetch("http://localhost:3006/upload-audio", {
         method: "POST",
         body: formData,
       }).catch(err =>
@@ -223,6 +227,8 @@ mediaRecorderRef.current.onstop = async () => {
 };
 
 const stopRecording = () => {
+    if (!isRecording) return;
+
   mediaRecorderRef.current.stop();
   mediaRecorderRef.current.stream
     .getTracks()
@@ -232,15 +238,28 @@ const stopRecording = () => {
 
 
 const endInterview = async () => {
-  speakText("Thank you. Generating your feedback.");
-
-  await fetch("http://localhost:3000/end-session", {
+  speakText("Well done , You have completed your Interview . Click to view Feedback");
+try{
+  const res= await fetch("http://localhost:3006/end-session", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sessionId }),
   });
 
-  navigate(`/feedback/${sessionId}`);
+  const data=await res.json();
+  if(data.success){
+    setFeedback(data.feedback);
+    // show completion screen
+      setShowCompletionScreen(true); 
+  }
+
+} catch(err){
+  console.log("failed in fetching data")
+} finally{
+  // stop loader
+  setIsAnalyzing(false);   
+
+} 
 };
 
 
@@ -283,6 +302,20 @@ const next =()=>{
     setCurrentIndex(currentIndex+1);
   }
 }
+const skipQuestion = () => {
+  const key = `${activeSection}-${currentIndex}`;
+
+  // mark skipped only if not answered
+  setQuestionStatus(prev => ({
+    ...prev,
+    [key]: prev[key] || "skipped"
+  }));
+
+  speakText("Okay, skipping this question.");
+
+  next();
+};
+
 
 const prev =()=>{
 
@@ -291,12 +324,19 @@ const prev =()=>{
   }
 }
 
+const answeredCount = Object.values(questionStatus)
+  .filter(v => v === "answered").length;
+
+const skippedCount = Object.values(questionStatus)
+  .filter(v => v === "skipped").length;
+
+const totalAttempted = answeredCount + skippedCount;
 
     return(
         <>
          {!showQuestionsUI && ( 
         <Navbar/> )}
-        <div className="min-h-screen">
+        <div className="min-h-screen ">
 
           {/* Page 1 - Upload Resume */}
 
@@ -371,7 +411,7 @@ const prev =()=>{
       setTransitionLoading(false);
       setStartPractice(true);
     }, 3000);
-  }}  className="bg-pink-300 text-white px-8 py-4 rounded-full cursor-pointer mt-5 hover:bg-pink-400  ">Start Practice</button>
+  }}  className="bg-pink-300 text-white px-8 py-4 rounded-full cursor-pointer mt-5 hover:bg-pink-400 active:scale-95 transition-transform  ">Start Practice</button>
              </div>
       <div className="w-[75%] h-[72vh] border-2 border-gray-400 rounded-xl p-6 overflow-y-scroll bg-white shadow-md">
 
@@ -399,7 +439,15 @@ const prev =()=>{
 
     </div>
       <button
-      onClick={() => setShowQuestionsUI(false)}
+      onClick={() => {
+           setTransitionText("Back To Upload Page...");
+    setTransitionLoading(true);
+    setTimeout(()=>{
+         setTransitionLoading(false);
+      setShowQuestionsUI(false);
+      
+    },2000)
+      }}
       className=" ms-350 mt-4 px-6 py-2 rounded-full text-white bg-pink-300 shadow hover:bg-pink-200 transition"
       title="Go Home"
     >
@@ -426,30 +474,28 @@ const prev =()=>{
 
      <button
   onClick={() => {
-  setTransitionText("Restarting interview session…");
-  setTransitionLoading(true);
-
-  setTimeout(() => {
-    setTransitionLoading(false);
-
+    // stop recording if active
     if (isRecording) {
       mediaRecorderRef.current?.stop();
       setIsRecording(false);
     }
 
+    // stop any speaking voice
     window.speechSynthesis.cancel();
-    setSessionId(uuidv4());
-    setCurrentIndex(0);
-    SetActiveSection("HR");
-  }, 2000);
-}}
 
+    // NEW interview session
+    setSessionId(uuidv4());
+
+    // reset practice state
+    setCurrentIndex(0);
+    SetActiveSection("HR");  // optional but recommended
+   
+  }}
   className="ms-250 mb-2 px-6 py-2 rounded-full text-white bg-pink-300 shadow hover:bg-pink-200 transition"
 >
   Start Again
 </button>
-
-    </div>
+</div>
 
    
 
@@ -473,7 +519,9 @@ const prev =()=>{
             Q{currentIndex + 1}. {questions[activeSection][currentIndex]?.q}
           </p>
         </div>
-              {/* Voice Wave Animation */}
+             
+             
+ {/* Voice Wave Animation */}
   {isRecording && (
     <div className="voice-wave mt-30 me-18 flex justify-center  ">
          <div className="wave-bar"></div>
@@ -489,25 +537,21 @@ const prev =()=>{
     </div>
   )}
       </div>
-
-      
-
     </div>
-    
-
-    
-
     {/* BOTTOM BUTTONS */}
     <div className="flex items-center justify-center mt-20 gap-20">
 
-      {/* PREV */}
-      <button
-        onClick={prev}
-        disabled={currentIndex === 0}
-        className="px-10 py-3 border border-gray-400 rounded-xl text-gray-700 hover:bg-gray-100 disabled:opacity-40"
-      >
-        Prev
-      </button>
+     <button
+  onClick={skipQuestion}
+  disabled={isRecording}
+  className={`px-10 py-3 border rounded-xl text-gray-700
+    ${isRecording 
+      ? "opacity-40 cursor-not-allowed bg-gray-100" 
+      : "hover:bg-gray-100"}`
+  }
+>
+  Skip
+</button>
 
       {/* SPEAK NOW BUTTON */}
   <button
@@ -526,8 +570,6 @@ const prev =()=>{
   )}
 </button>
 
-
-
       {/* NEXT */}
      <button onClick={next} disabled={isRecording}
   className={`px-10 py-3 border rounded-xl text-gray-700
@@ -535,35 +577,26 @@ const prev =()=>{
       ? "opacity-40 cursor-not-allowed bg-gray-100" 
       : "hover:bg-gray-100"} `}> Next </button>
 
-
-      
-
     </div>
 
-
-
-    <button
-  onClick={() => setShowExitModal(true)}
-  className="ms-350 mb-2 px-6 py-2 rounded-full text-white bg-pink-300 shadow hover:bg-pink-200 transition"
-  title="Go Home"
->
+    <button onClick={() => setShowExitModal(true)} className="ms-350 mb-2 px-6 py-2 rounded-full text-white bg-pink-300 shadow hover:bg-pink-200 transition"
+  title="Go Home" >
   Exit
 </button>
 
 
   </div>
 )}
-
-
-    
-   
 </div>
 
+
+{/* Loader for all */}
 {transitionLoading && (
   <TransitionLoader text={transitionText} />
 )}
 
 
+{/* Loader-ANalyze interview */}
 {isAnalyzing && (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-pink-100/80 backdrop-blur-md">
     
@@ -591,7 +624,22 @@ const prev =()=>{
   </div>
 )}
 
+{/* completed screen */}
+{showCompletionScreen && (
+  <InterviewCompleted
+    sessionId={sessionId}
+      answered={answeredCount}
+  skipped={skippedCount}
+  feedback={feedback}
+    onNextRound={() => {
+      alert("Next round coming soon 🚀");
+      // later you can route to round 2
+    }}
+  />
+)}
 
+
+{/* Exit button pop box */}
 {showExitModal && (
   <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
     <div className="bg-white p-8 rounded-xl shadow-2xl text-center max-w-md w-full border border-pink-300">
@@ -622,7 +670,7 @@ const prev =()=>{
     setTransitionLoading(false);
     setStartPractice(false);
     setShowQuestionsUI(true);
-  }, 3000);
+  }, 2000);
 }}
 
           className="px-6 py-2 rounded-full bg-pink-300 text-white hover:bg-pink-400"

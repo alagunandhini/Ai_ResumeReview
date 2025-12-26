@@ -6,7 +6,7 @@ export default function Feedback() {
   const [feedback, setFeedback] = useState(null);
 
   useEffect(() => {
-    fetch(`http://localhost:3000/feedback/${sessionId}`)
+    fetch(`http://localhost:3006/feedback/${sessionId}`)
       .then(res => res.json())
       .then(data => {
         if (!data || data.error) return;
