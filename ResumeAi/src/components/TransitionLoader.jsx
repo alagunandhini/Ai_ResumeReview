@@ -1,6 +1,6 @@
 const TransitionLoader = ({ text }) => {
   return (
-    <div className="fixed inset-0 z-40 bg-white/70 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
+    <div className="fixed inset-0 z-[100] bg-white/70 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
 
       {/* Robot Animation */}
       <img

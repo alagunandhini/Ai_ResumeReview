@@ -23,7 +23,7 @@ const FeedbackSchema = new mongoose.Schema({
 
 const AnswerSchema = new mongoose.Schema({
   question: { type: String, required: true },
-  transcript: { type: String, required: true },
+  transcript: { type: String},
 });
 
 const InterviewSessionSchema = new mongoose.Schema({

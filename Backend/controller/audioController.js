@@ -3,8 +3,6 @@ const path = require("path");
 const InterviewSession = require("../models/InterviewSession");
 
 
-// OPTIONAL: later you can add LLaMA here
-// const evaluateAnswer = async (question, answer) => { ... }
 
 exports.processAudio = async (req, res) => {
   try {
