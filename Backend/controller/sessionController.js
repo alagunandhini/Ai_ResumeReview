@@ -38,6 +38,26 @@ exports.endSession = async (req, res) => {
     // generate Ai feedback
  const feedback = await generateGroqFeedback(combinedText);
 
+ // HARD VALIDATION — MUST EXIST
+if (
+  !feedback.qa_feedback ||
+  feedback.qa_feedback.length !== session.answers.length
+) {
+  throw new Error(
+    `AI returned ${feedback.qa_feedback?.length || 0} feedbacks, but expected ${session.answers.length}`
+  );
+}
+
+const attempted = session.answers.filter(
+  a => a.transcript && a.transcript.trim().length > 0
+).length;
+
+const skipped = session.answers.length - attempted;
+
+feedback.attempted_questions = attempted;
+feedback.skipped_questions = skipped;
+
+
 // save feedback in db
     session.feedback = feedback;
     session.completed = true;

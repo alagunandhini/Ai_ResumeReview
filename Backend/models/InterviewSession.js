@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const QAFeedbackSchema = new mongoose.Schema({
   question: { type: String, required: true },
-  user_answer: { type: String, required: true },
+  user_answer: { type: String,default:""},
   improved_answer: { type: String, required: true },
 });
 

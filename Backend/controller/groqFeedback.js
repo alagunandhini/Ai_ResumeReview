@@ -3,42 +3,65 @@ const axios = require("axios");
 exports.generateGroqFeedback= async(combinedText) =>{
 
 const prompt = `
-You are an AI Interview Feedback Evaluator.
+You are an AI Interview Feedback Generator used in a production system.
 
-INPUT:
+TASK:
+You will receive multiple interview questions with user answers.
+You MUST generate feedback for EVERY question provided.
+
+INPUT INTERVIEW DATA:
 ${combinedText}
 
-IMPORTANT INSTRUCTIONS:
-1. MUST RETURN ONLY JSON in EXACT schema below. No extra text, no explanations.
-2. Use the schema strictly:
+STRICT RULES (VERY IMPORTANT):
+1. Each question in the input MUST appear exactly once in qa_feedback.
+2. DO NOT SKIP any question, even if:
+   - the answer is empty
+   - the answer is incorrect
+   - the answer is irrelevant
+3. qa_feedback array length MUST equal the number of questions in the input.
+4. Use the EXACT user answer as user_answer (even if it is empty or weak).
+5. improved_answer must be:
+   - professional
+   - clear
+   - suitable for a Full Stack Developer interview
+6. If user_answer is empty, generate a complete improved answer.
+7. Output MUST be valid JSON only.
+8. Do NOT add explanations, comments, markdown, or extra text.
+9. Do NOT rename any keys.
+10. Ensure all required fields are present.
+
+OUTPUT FORMAT (FOLLOW EXACTLY):
 
 {
   "performance_label": "Extraordinary | Good | Average | Bad",
-  "attempted_questions": number,
-  "skipped_questions": number,
+  "attempted_questions": 0,
+  "skipped_questions": 0,
   "communication": {
-    "confidence_percentage": number,
-    "clarity_percentage": number
+    "confidence_percentage": 0,
+    "clarity_percentage": 0
   },
-  "overall_feedback": string,
-  "motivation_message": [string, string, string],
+  "overall_feedback": "",
+  "motivation_message": [
+    "",
+    "",
+    ""
+  ],
   "qa_feedback": [
     {
-      "question": string,
-      "user_answer": string,
-      "improved_answer": string
+      "question": "",
+      "user_answer": "",
+      "improved_answer": ""
     }
   ]
 }
 
-3. Ensure all fields exist and types are correct.
-4. Do not add explanations, markdown, or extra keys.
-5. If unsure, regenerate JSON strictly following the schema.
-
----
-
-Evaluate the interview responses in combinedText and return JSON exactly as above.
+FINAL SELF-CHECK BEFORE RESPONDING:
+- Count the total number of questions in the input
+- Ensure qa_feedback contains ALL of them
+- Ensure JSON is valid and complete
+- Return ONLY the JSON object
 `;
+
 
 
 const response = await axios.post( "https://api.groq.com/openai/v1/chat/completions",
@@ -52,7 +75,7 @@ const response = await axios.post( "https://api.groq.com/openai/v1/chat/completi
         "Content-Type": "application/json",
         "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
       },
-      timeout: 30000, // ⏱️ safety
+      timeout: 30000, // ⏱ safety
     }
 )
 
