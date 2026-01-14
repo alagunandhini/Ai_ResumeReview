@@ -7,7 +7,7 @@ const InterviewCompleted = ({ answered, skipped, onNextRound, feedback }) => {
   const [showConfetti, setShowConfetti] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowConfetti(false), 3500);
+    const timer = setTimeout(() => setShowConfetti(false), 10000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -42,7 +42,7 @@ const InterviewCompleted = ({ answered, skipped, onNextRound, feedback }) => {
             </h1>
 
             <p className="text-gray-500 mb-6 md:mb-8 text-sm md:text-base">
-              You’ve completed Interview Round 1
+              You’ve completed your Interview 
             </p>
 
             <div className="grid grid-cols-3 gap-2 md:gap-4 mb-8">

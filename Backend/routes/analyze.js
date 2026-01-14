@@ -1,9 +1,10 @@
 var express = require('express');
 var router = express.Router();
-var analyzeResume=require('..//controller/analyzeController.js')
+var analyzeResume=require('..//controller/analyzeController.js');
+const authMiddleware=require("..//midleware/authMiddleware.js")
 
 
 
-router.post("/", analyzeResume);
+router.post("/", authMiddleware,analyzeResume);
 
 module.exports = router;

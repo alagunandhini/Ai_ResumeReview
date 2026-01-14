@@ -3,7 +3,6 @@ import { useCallback, useState } from "react";
 // to read and extract the file content
 // import * as pdfjsLib from 'pdfjs-dist';
 import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
 import { useEffect } from "react";
 import { useRef } from "react";
 import { FaMicrophone } from "react-icons/fa";
@@ -12,9 +11,10 @@ import { v4 as uuidv4 } from "uuid";
 import { useNavigate } from "react-router-dom";
 import TransitionLoader from "../components/TransitionLoader";
 import InterviewCompleted from "../components/InterviewCompleted";
-
+import { motion, AnimatePresence } from "framer-motion";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
-import { useEffectEvent } from "react";
+import { CheckCircle } from "lucide-react";
+
 
 // Set workerSrc to CDN URL
 //pdfjs-dist needs a web worker to process PDFs in a background thread.
@@ -28,7 +28,7 @@ const Resume = () => {
     var file = acceptedFiles[0]; // stores the first file in arrary
     setFile(file); // save the file in file variable
     console.log(file);
-    alert(`file uploaded ${file.name}`);
+
     if (file.type === "application/pdf") {
       readPdf(file); //checking wheather file is pdf or not
     } else {
@@ -60,6 +60,30 @@ const Resume = () => {
     reader.readAsArrayBuffer(file);
   };
 
+// toast notification , if user not login 
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "success",
+  });
+ // toast notification functtion
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+
+    // remove after 3 sec
+    setTimeout(() => {
+      setToast({ show: false, message: "", type });
+    }, 5000);
+  };
+
+ //  if token is not there then it autamatically in login page 
+  useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    navigate("/login");
+  }
+}, []);
+
 
   const [questions, setQuestions] = useState([]); // store generated questions
   const [loading, setLoading] = useState(false);
@@ -69,11 +93,23 @@ const Resume = () => {
   const [showCompletionScreen, setShowCompletionScreen] = useState(false);
   const [questionStatus, setQuestionStatus] = useState({});
   const [showFeedback, setShowFeedback] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   // it send the resume text to backend , to get Ai interview question
   const analyzeInterview = async () => {
     if (!resumeText) {
       alert("Please upload your resume first!");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      showToast("Please login to continue", "error");
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+
       return;
     }
 
@@ -87,6 +123,7 @@ const Resume = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({ text: resumeText }),
       });
@@ -220,9 +257,7 @@ const Resume = () => {
   };
 
   const endInterview = async () => {
-    speakText(
-      "Well done , You have completed your Interview . Click to view Feedback"
-    );
+   
     try {
       const res = await fetch("http://localhost:3006/end-session", {
         method: "POST",
@@ -231,6 +266,9 @@ const Resume = () => {
       });
 
       const data = await res.json();
+       speakText(
+      "Well done , You have completed your Interview . Click to view Feedback"
+    );
       if (data.success) {
         setFeedback(data.feedback);
         // show completion screen
@@ -248,31 +286,39 @@ const Resume = () => {
   const speakText = (text) => {
     if (!text) return;
 
-    window.speechSynthesis.cancel();
+    window.speechSynthesis.cancel(); // stop any current speech
 
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = "en-US";
-    utter.rate = 1;
-    utter.pitch = 1.1; // slightly soft girl tone
+    utter.rate = 0.8;
+    utter.pitch = 1.1; // soft female tone
+    utter.onstart = () => setIsSpeaking(true);
+    utter.onend = () => setIsSpeaking(false);
 
-    // GET VOICES & PICK FEMALE
+    const setFemaleVoiceAndSpeak = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const femaleVoice =
+        voices.find(
+          (v) =>
+            v.name.includes("Female") ||
+            v.name.includes("Samantha") ||
+            v.name.includes("Google UK English Female") ||
+            v.name.includes("Microsoft Zira") ||
+            v.name.includes("Microsoft Aria")
+        ) || voices[0]; // fallback if no female found
+
+      utter.voice = femaleVoice;
+      window.speechSynthesis.speak(utter);
+    };
+
     const voices = window.speechSynthesis.getVoices();
-
-    // Try to find a female-like voice
-    const femaleVoice =
-      voices.find(
-        (v) =>
-          v.name.includes("Female") ||
-          v.name.includes("Samantha") ||
-          v.name.includes("Google UK English Female") ||
-          v.name.includes("Microsoft Zira") ||
-          v.name.includes("Microsoft Aria") ||
-          v.gender === "female"
-      ) || voices[0];
-
-    utter.voice = femaleVoice;
-
-    window.speechSynthesis.speak(utter);
+    if (voices.length > 0) {
+      // voices are ready
+      setFemaleVoiceAndSpeak();
+    } else {
+      // wait for voices to load
+      window.speechSynthesis.onvoiceschanged = setFemaleVoiceAndSpeak;
+    }
   };
 
   const next = () => {
@@ -292,7 +338,7 @@ const Resume = () => {
       setTimeout(() => {
         setTransitionLoading(false);
         setStartPractice(false);
-          setShowQuestionsUI(true);
+        setShowQuestionsUI(true);
         setCurrentIndex(0);
       }, 2000);
       return;
@@ -316,7 +362,7 @@ const Resume = () => {
       [key]: prev[key] || "skipped",
     }));
 
-    speakText("Okay, skipping this question.");
+    // speakText("Okay, skipping this question.");
 
     next();
   };
@@ -341,53 +387,66 @@ const Resume = () => {
       setCurrentIndex(0);
     }, 3000);
   };
- const [hydrated,setHydrated]=useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
   // storing each state, when each state changes
-  useEffect(()=>{
-    if(!hydrated){
+  useEffect(() => {
+    if (!hydrated) {
       return;
     }
-    const appState={  showQuestionsUI,
+    const appState = {
+      showQuestionsUI,
+      startPractice,
+      questions,
+      activeSection,
+      currentIndex,
+      sectionIndex,
+      mode,
+      sessionId,
+    };
+    localStorage.setItem("interviewstate", JSON.stringify(appState));
+  }, [
+    hydrated,
+    showQuestionsUI,
     startPractice,
     questions,
     activeSection,
     currentIndex,
     sectionIndex,
     mode,
-    sessionId,}
-    localStorage.setItem("interviewstate",JSON.stringify(appState));
-  },[
-    hydrated,
-  showQuestionsUI,
-  startPractice,
-  questions,
-  activeSection,
-  currentIndex,
-  sectionIndex,
-  mode,
-  sessionId,
-])
+    sessionId,
+  ]);
 
-// when refresh it will will on same screen
-useEffect(()=>{
-  const savedState=localStorage.getItem("interviewstate");
-  if(savedState){
-    const state=JSON.parse(savedState);
-    setShowQuestionsUI(state.showQuestionsUI); 
-    setStartPractice(state.startPractice);
-    setQuestions(state.questions || []);
-    SetActiveSection(state.activeSection || "HR");
-    setCurrentIndex(state.currentIndex || 0);
-    setSectionIndex(state.sectionIndex || 0);
-    setMode(state.mode || "practice");
-    setSessionId(state.sessionId || uuidv4());
+  // when refresh it will will on same screen
+  useEffect(() => {
+    const savedState = localStorage.getItem("interviewstate");
+    if (savedState) {
+      const state = JSON.parse(savedState);
+      setShowQuestionsUI(state.showQuestionsUI);
+      setStartPractice(state.startPractice);
+      setQuestions(state.questions || []);
+      SetActiveSection(state.activeSection || "HR");
+      setCurrentIndex(state.currentIndex || 0);
+      setSectionIndex(state.sectionIndex || 0);
+      setMode(state.mode || "practice");
+      setSessionId(state.sessionId || uuidv4());
+    }
+    setHydrated(true);
+  }, []);
 
-    
-  }
-  setHydrated(true);
-},[]);
+  // username
+  const username = localStorage.getItem("username");
 
+  //  automatic speak when question ui comes
+  useEffect(() => {
+    if (showQuestionsUI && !startPractice) {
+      const timer = setTimeout(() => {
+        speakText(`Hey ${username} , are you Ready to practice`);
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [showQuestionsUI, startPractice]);
 
   const answeredCount = Object.values(questionStatus).filter(
     (v) => v === "answered"
@@ -399,70 +458,94 @@ useEffect(()=>{
 
   return (
     <>
+      {toast.show && (
+        <div className="fixed bottom-5 right-5 z-[100] animate-slideIn">
+          <div
+            className={`px-8 py-3 rounded-lg shadow-lg  text-sm ${
+              toast.type === "success" ? "bg-pink-400 " : "bg-gray-900"
+            } text-white flex gap-3`}
+          >
+            {toast.type === "success" ? (
+              <CheckCircle size={18} className="text-pink-500" />
+            ) : (
+              <span className="font-extrabold  ">!</span>
+            )}
 
+            {toast.message}
+          </div>
+        </div>
+      )}
       {!showQuestionsUI && <Navbar />}
 
-         {/* Loader for all */}
+      {/* Loader for all */}
       {transitionLoading && <TransitionLoader text={transitionText} />}
 
       <div className="min-h-screen ">
         {/* Page 1 - Upload Resume */}
 
         {!showQuestionsUI && (
-          <>
-            <div className=" grid grid-cols-1 md:grid-cols-6 min-h-screen ">
-              {/* left */}
-              <div className=" bg-gradient-to-b from-pink-50 to-white  md:col-span-2 md:ps-20 md:pt-15 py-12  px-8 flex flex-col justify-center md:justify-start  border-e border-gray-300">
-                <img
-                  src="resume1.png"
-                  className=" rounded-xl max-w-[80%] h-auto max-h-[60vh] object-fill shadow-xl bg-black"
-                />
-                  <p className="mt-6 text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">
-            Powered by AI Analysis
-        </p>
-              </div>
-              {/* right */}
-              <div className=" md:col-span-4 flex flex-col items-center  p-10">
-                <h1 className="font-bold text-2xl mb-2">
-                  
-                </h1>
-                <h1 className="font-semibold text-md text-center mb-8 text-gray-600">
-                 Upload your resume to receive AI-generated interview questions <br/>
-        based on your skills, projects, and experience.
-                </h1>
-                <div
-                  {...getRootProps()}
-                  className="border-2 border-dashed border-pink-300 
-        w-full max-w-2xl h-[38vh] 
-        flex flex-col justify-center items-center 
-        rounded-2xl cursor-pointer
-        hover:bg-pink-50 transition-all duration-300"
-                >
-                  <input {...getInputProps()} />
-                  <img src="border.png" className="w-32" />
-                  <p className="">Upload Your Resume</p>
-                  <p className=""> Drag & drop or click to upload</p>
-                </div>
-                {file && (
-                  <p className="mt-4 text-gray-600 ">
-                    {" "}
-                    {file.name} uploaded Succesfully
-                  </p>
-                )}
-
-                <button
-                  onClick={analyzeInterview}
-                  className="bg-pink-300 text-white px-6 py-5 rounded-md cursor-pointer mt-5 hover:bg-pink-400  "
-                >
-                  Generate Now{" "}
-                </button>
-
-                  <p className="mt-6 text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">
-            Powered by AI Analysis
-        </p>
-              </div>
+          <div className=" grid grid-cols-1 md:grid-cols-6  bg-white">
+            {/* LEFT SECTION */}
+            <div className="hidden md:flex md:col-span-2 flex-col items-center px-10 py-14 border-r border-gray-200 bg-gradient-to-b from-pink-50 to-white">
+              <img
+                src="resume1.png"
+                className="rounded-xl w-full max-w-xs shadow-lg object-contain"
+                alt="Resume Preview"
+              />
+              <p className="mt-8 text-[11px] text-gray-400 font-semibold tracking-widest uppercase">
+                Powered by AI Analysis
+              </p>
             </div>
-          </>
+
+            {/* RIGHT SECTION */}
+            <div className="md:col-span-4 px-8 md:px-14 py-14 flex flex-col">
+              {/* HEADER */}
+              <h1 className="text-4xl font-bold text-gray-800 leading-tight mb-3 md:ms-30">
+                Upload Your Resume
+              </h1>
+              <p className="text-gray-600 max-w-xl mb-10 md:ms-30">
+                Upload your resume to receive AI-generated interview questions
+                based on your skills, projects, and experience.
+              </p>
+
+              {/* UPLOAD BOX */}
+              <div
+                {...getRootProps()}
+                className="border-2 border-dashed border-pink-300 rounded-xl 
+                     h-[38vh] max-w-2xl w-full mx-auto
+                     flex flex-col items-center justify-center
+                     text-center cursor-pointer
+                     hover:border-pink-400 hover:bg-pink-50
+                     transition-all duration-300"
+              >
+                <input {...getInputProps()} />
+                <img src="border.png" className="w-28 mb-4" />
+                <p className="font-semibold text-gray-700">
+                  Upload your resume
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Drag & drop or click to upload
+                </p>
+              </div>
+
+              {/* FILE STATUS */}
+              {file && (
+                <p className="mt-4 text-sm text-green-600 text-center">
+                  ✅ {file.name} uploaded successfully
+                </p>
+              )}
+
+              {/* CTA BUTTON */}
+              <button
+                onClick={analyzeInterview}
+                className="mt-8 self-center bg-pink-400 text-white 
+                     px-10 py-4 rounded-lg font-semibold
+                     hover:bg-pink-500 transition duration-300 shadow-md"
+              >
+                Generate Questions
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Page 2 - Generate question  */}
@@ -470,35 +553,71 @@ useEffect(()=>{
         {showQuestionsUI && !startPractice && (
           <div className="col-span-6 min-h-screen bg-white p-6 md:pb-0">
             {/* TOP TABS */}
-            <div className="w-full flex items-center justify-between">
-              {/* Center Tabs */}
-              <div className="flex-1 flex justify-center">
-                <div className="flex gap-4 bg-pink-50 px-4 py-2 rounded-2xl shadow-inner">
-                  {sections.map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => SetActiveSection(tab)}
-                      className={`px-36 py-2 rounded-xl font-semibold text-sm md:text-base transition-all duration-300
+            <div className="w-full flex flex-col md:flex-row items-center justify-center md:justify-between mb-6 ">
+              <div className="flex  justify-center gap-2 md:gap-2 bg-pink-50 px-2 md:px-4 py-2 rounded-2xl shadow-inner">
+                {sections.map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => SetActiveSection(tab)}
+                    className={`px-3 sm:px-6 md:px-36 py-2 rounded-xl font-semibold text-sm sm:text-base md:text-base transition-all duration-300
               ${
                 activeSection === tab
                   ? "bg-pink-300 text-white shadow-md"
                   : "bg-white text-gray-700 hover:bg-pink-200"
               }
             `}
-                    >
-                      {tab.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
+                  >
+                    {tab.toUpperCase()}
+                  </button>
+                ))}
               </div>
             </div>
             {/* QUESTION BOX */}
-            <div className="mt-10 flex justify-center gap-10">
-              <div className=" h-[72vh] flex flex-col items-center justify-center ">
-                <img src="robot.png" className="w-70 h-70" />
-                <p className="text-center">
-                  Hi, Pinkyy here..! 💗 <br /> Let’s practice!
-                </p>
+            <div className="mt-3 md:mt-10 flex flex-col md:flex-row items-center justify-center md:gap-10 ">
+              <div className=" h-[50vh] md:h-[72vh] flex flex-col items-center justify-center ">
+                <motion.img
+                  src="robot.png"
+                  className="w-50 h-50 md:w-70 md:h-70 me-4"
+                  initial={{ opacity: 0, x: -40 }}
+                  animate={{
+                    opacity: 1,
+                    x: 0,
+                    scale: isSpeaking ? [1, 1.08, 1] : 1,
+                  }}
+                  transition={{
+                    duration: 0.6,
+                    repeat: isSpeaking ? Infinity : 0,
+                    ease: "easeInOut",
+                  }}
+                />
+
+                {isSpeaking ? (
+                  <div className="flex gap-2 mt-1 mb-4">
+                    {[...Array(6)].map((_, i) => (
+                      <motion.span
+                        key={i}
+                        className="w-2 h-6 bg-pink-300 rounded-full"
+                        animate={{ scaleY: [1, 2, 1] }}
+                        transition={{
+                          duration: 0.5,
+
+                          repeat: Infinity,
+
+                          delay: i * 0.1,
+                        }}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <motion.p
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center mt-1 font-medium text-gray-600"
+                  >
+                    Hi, Pinkyy here! 💗 <br />
+                    <span className="text-pink-400">Ready to start?</span>
+                  </motion.p>
+                )}
 
                 <button
                   onClick={() => {
@@ -512,13 +631,14 @@ useEffect(()=>{
                       setStartPractice(true);
                     }, 3000);
                   }}
-                  className="bg-pink-300 text-white px-8 py-4 rounded-full cursor-pointer mt-5 hover:bg-pink-400 active:scale-95 transition-transform  "
+                  className="bg-pink-300 text-white px-8 py-4 rounded-full cursor-pointer mt-5 hover:bg-pink-400 hover:translate-y-[-3px] active:scale-90 transition-all duration-200
+  "
                 >
                   Start Practice
                 </button>
               </div>
               {/* right panel with Questions */}
-              <div className="w-[75%] h-[72vh] border-2 border-gray-400 rounded-xl p-6 overflow-y-scroll bg-white shadow-md">
+              <div className="md:w-[75%] h-[72vh] border-2 border-gray-400 rounded-xl p-6 overflow-y-scroll bg-white shadow-md">
                 <h2 className="text-2xl font-bold text-pink-400 mb-4 text-center">
                   {activeSection} Questions
                 </h2>
@@ -542,9 +662,10 @@ useEffect(()=>{
               </div>
             </div>
 
-            <div className="flex justify-end gap-4 mt-4">
+            <div className="flex justify-center md:justify-end gap-4 mt-5 md:mt-4">
               <button
-                className="px-6 py-2 rounded-full text-white bg-pink-300 shadow hover:bg-pink-200 transition"
+                className="px-6 py-2 rounded-full text-white bg-pink-300 shadow hover:bg-pink-400 hover:translate-y-[-3px] active:scale-90 transition-all duration-200
+"
                 onClick={() => {
                   setMode("interview");
                   setSectionIndex(0);
@@ -570,7 +691,8 @@ useEffect(()=>{
                     setShowQuestionsUI(false);
                   }, 2000);
                 }}
-                className=" mt-0 px-6 py-2 rounded-full text-white bg-pink-300 shadow hover:bg-pink-200 transition"
+                className="px-8 py-3 rounded-full text-pink-400 bg-white border-2 border-pink-200 shadow hover:bg-pink-50 hover:translate-y-[-3px] active:scale-90 transition-all duration-200
+ font-bold"
                 title="Go Home"
               >
                 Back
@@ -595,84 +717,135 @@ useEffect(()=>{
                 {currentIndex + 1}/{questions[computedSection]?.length}
               </p>
 
-              <button
-                onClick={() => {
-                  // stop recording if active
-                  if (isRecording) {
-                    mediaRecorderRef.current?.stop();
-                    setIsRecording(false);
-                  }
+              <div className="flex gap-2 md:ms-40  ">
+                <button
+                  onClick={() => {
+                    // stop recording if active
+                    if (isRecording) {
+                      mediaRecorderRef.current?.stop();
+                      setIsRecording(false);
+                    }
 
-                  // stop any speaking voice
-                  window.speechSynthesis.cancel();
+                    // stop any speaking voice
+                    window.speechSynthesis.cancel();
 
-                  // NEW interview session
-                  setSessionId(uuidv4());
+                    // NEW interview session
+                    setSessionId(uuidv4());
 
-                  // reset practice state
-                  setCurrentIndex(0);
-                  SetActiveSection(activeSection); // optional but recommended
-                }}
-                className="ms-250 mb-2 px-6 py-2 rounded-full text-white bg-pink-300 shadow hover:bg-pink-200 transition"
-              >
-                Start Again
-              </button>
+                    // reset practice state
+                    setCurrentIndex(0);
+                    SetActiveSection(activeSection); // optional but recommended
+                  }}
+                  className="md:ms-250 mb-2 px-6 py-2 rounded-full text-white bg-pink-300 shadow hover:bg-pink-200 transition"
+                >
+                  Start Again
+                </button>
+
+                <button
+                  onClick={() => setShowExitModal(true)}
+                  className=" mb-2 px-6 py-2 rounded-full text-white bg-pink-300 shadow hover:bg-pink-200 transition"
+                  title="Go Home"
+                >
+                  Exit
+                </button>
+              </div>
             </div>
 
-            {/* MIDDLE SECTION */}
-            <div className="flex w-full px-10 mt-5">
-              {/* LEFT ROBOT */}
-              <div className="w-1/4 flex flex-col items-center">
-                <img src="robot.png" className="w-70 h-70 object-contain" />
-                <p className="text-gray-500 mt-2 text-center">
-                  Hi, Pinkyy here..! 💗 <br /> Start speaking when you’re ready
-                </p>
+            {/* LEFT SECTION */}
+            <div className="flex flex-col md:flex-row w-full px-6 md:px-10 mt-5 gap-4">
+              {/* ROBOT */}
+              <div className="flex justify-center md:w-1/4 w-full">
+                <div className="flex flex-col items-center">
+                  <motion.img
+                    src="robot.png"
+                    className="w-50 h-50 md:w-70 md:h-70 me-4"
+                    initial={{}}
+                    animate={{
+                      scale: isSpeaking ? [1, 1.04, 1] : 1,
+                    }}
+                    transition={{
+                      duration: 0.6,
+                      repeat: isSpeaking ? Infinity : 0,
+                      ease: "easeInOut",
+                    }}
+                  />
+                  {/* voice wave in bottom of robot */}
+                  {isSpeaking ? (
+                    <div className="flex gap-2 mt-1 mb-4">
+                      {[...Array(6)].map((_, i) => (
+                        <motion.span
+                          key={i}
+                          className="w-2 h-6 bg-pink-300 rounded-full"
+                          animate={{ scaleY: [1, 2, 1] }}
+                          transition={{
+                            duration: 0.5,
+
+                            repeat: Infinity,
+
+                            delay: i * 0.1,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <motion.p
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-center mt-1 font-medium text-gray-600"
+                    >
+                      Hi, Pinkyy here! 💗 <br />
+                      <span className="text-gray-600">
+                        Start speaking When You Are Ready{" "}
+                      </span>
+                    </motion.p>
+                  )}
+                </div>
               </div>
 
               {/* QUESTION BOX */}
-              <div className=" flex flex-col gap-20 w-200">
+              <div className="flex flex-col md:w-200 w-full">
                 <div
-                  className="border border-gray-300 rounded-tl-3xl rounded-tr-3xl rounded-br-3xl 
-                  rounded-bl-md px-20 py-4 w-full h-20 text-center shadow-sm bg-white"
+                  className="
+    border border-gray-300
+    rounded-tl-3xl rounded-tr-3xl rounded-br-3xl rounded-bl-md
+    px-4 sm:px-8 lg:px-20
+    py-4
+    w-full
+    min-h-[80px]
+    text-center
+    shadow-sm
+    bg-white
+    overflow-hidden
+  "
                 >
-                  <p className="text-xl text-center font-semibold text-gray-800">
-                    Q{currentIndex + 1}.{" "}
-                    {questions[computedSection][currentIndex]?.q}
-                  </p>
+                  <AnimatePresence mode="wait">
+                    <motion.p
+                      key={currentIndex}
+                      initial={{ x: 60, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      exit={{ x: -60, opacity: 0 }}
+                      transition={{ duration: 0.35, ease: "easeOut" }}
+                      className="text-base md:text-xl font-semibold text-gray-800"
+                    >
+                      Q{currentIndex + 1}.{" "}
+                      {questions[computedSection][currentIndex]?.q}
+                    </motion.p>
+                  </AnimatePresence>
                 </div>
 
                 {/* Voice Wave Animation */}
                 {isRecording && (
-                  <div className="voice-wave mt-30 me-18 flex justify-center  ">
-                    <div className="wave-bar"></div>
-                    <div className="wave-bar"></div>
-                    <div className="wave-bar"></div>
-                    <div className="wave-bar"></div>
-                    <div className="wave-bar"></div>
-                    <div className="wave-bar"></div>
-                    <div className="wave-bar"></div>
-                    <div className="wave-bar"></div>
-                    <div className="wave-bar"></div>
-                    <div className="wave-bar"></div>
+                  <div className="voice-wave md:mt-50 md:me-20 mt-8 flex justify-center ">
+                    {Array.from({ length: 10 }).map((_, i) => (
+                      <div key={i} className="wave-bar"></div>
+                    ))}
                   </div>
                 )}
               </div>
             </div>
-            {/* BOTTOM BUTTONS */}
-            <div className="flex items-center justify-center mt-20 gap-20">
-              <button
-                onClick={skipQuestion}
-                disabled={isRecording}
-                className={`px-10 py-3 border rounded-xl text-gray-700
-    ${
-      isRecording
-        ? "opacity-40 cursor-not-allowed bg-gray-100"
-        : "hover:bg-gray-100"
-    }`}
-              >
-                Skip
-              </button>
 
+            {/* BOTTOM BUTTONS */}
+            <div className="flex flex-col items-center justify-center md:ms-6 mt-10 gap-6 mb-5">
               {/* SPEAK NOW BUTTON */}
               <button
                 onClick={isRecording ? stopRecording : startRecording}
@@ -687,47 +860,36 @@ useEffect(()=>{
                 {isRecording ? (
                   <FaStop size={40} className="text-white" />
                 ) : (
-                  <FaMicrophone size={50} className="text-white" />
+                  <FaMicrophone size={40} className="text-white" />
                 )}
               </button>
 
-              {/* NEXT */}
               <button
-                onClick={next}
+                onClick={skipQuestion}
                 disabled={isRecording}
                 className={`px-10 py-3 border rounded-xl text-gray-700
     ${
       isRecording
         ? "opacity-40 cursor-not-allowed bg-gray-100"
         : "hover:bg-gray-100"
-    } `}
+    }`}
               >
-                {" "}
-                Next{" "}
+                Skip
               </button>
             </div>
-
-            <button
-              onClick={() => setShowExitModal(true)}
-              className="ms-350 mb-2 px-6 py-2 rounded-full text-white bg-pink-300 shadow hover:bg-pink-200 transition"
-              title="Go Home"
-            >
-              Exit
-            </button>
           </div>
         )}
       </div>
 
-
       {/* Loader-ANalyze interview */}
       {isAnalyzing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-pink-100/80 backdrop-blur-md">
-          <div className="bg- rounded-3xl p-10 shadow-2xl flex flex-col items-center gap-6 animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-pink-100/80 backdrop-blur-md p-6 md:p-0">
+          <div className=" rounded-3xl p-10 shadow-2xl flex flex-col items-center gap-6 animate-fadeIn">
             {/* Robot */}
             <img src="/robot.png" className="w-32 animate-bounceSlow" />
 
             {/* Text */}
-            <h2 className="text-2xl font-bold text-pink-400">
+            <h2 className="text-2xl font-bold text-pink-400 text-center">
               Analyzing Your Interview
             </h2>
 
@@ -761,10 +923,10 @@ useEffect(()=>{
               SetActiveSection(sections[0]);
               setCurrentIndex(0);
               setQuestionStatus({});
-               setSessionId(uuidv4());
-               
+              setSessionId(uuidv4());
+
               setStartPractice(true);
-                setTransitionLoading(false);
+              setTransitionLoading(false);
             }, 2200);
 
             // later you can route to round 2
@@ -774,7 +936,7 @@ useEffect(()=>{
 
       {/* Exit button pop box */}
       {showExitModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-5 md:p-0">
           <div className="bg-white p-8 rounded-xl shadow-2xl text-center max-w-md w-full border border-pink-300">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               Exit Practice?
@@ -799,6 +961,7 @@ useEffect(()=>{
                   setTransitionLoading(true);
 
                   setTimeout(() => {
+                    setSessionId(uuidv4());
                     setTransitionLoading(false);
                     setStartPractice(false);
                     setShowQuestionsUI(true);
@@ -813,8 +976,6 @@ useEffect(()=>{
           </div>
         </div>
       )}
-
-    
     </>
   );
 };

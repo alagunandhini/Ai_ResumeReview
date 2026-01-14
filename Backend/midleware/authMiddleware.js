@@ -1,9 +1,13 @@
 const jwt=require("jsonwebtoken");
 
 const authMiddleware=(req,res,next)=>{
-    const token=req.headers.authorization;
 
-    if(!token) res.json({message:"no token"});
+    const auth=req.headers.authorization;
+   if(!auth) return res.json({message:"no token provided"});
+   
+    const token=auth.split(" ")[1];
+     if(!auth) return res.json({message:"Invalid Token format"});
+
 
     try{
         // verify the user token
@@ -11,7 +15,7 @@ const authMiddleware=(req,res,next)=>{
         req.userId=decoded.id;
         next();
 
-    }catch{
+    }catch(err){
         res.json({message:"invalid token"})
     }
 
