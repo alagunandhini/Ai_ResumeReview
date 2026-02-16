@@ -6,5 +6,10 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [
     tailwindcss(),
-    react()],
+    react()
+  ],
+  server: {
+    host: true,  // allows access from outside the container
+    port: 5173   // make sure this matches your docker-compose mapping
+  }
 })
