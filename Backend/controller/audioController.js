@@ -1,8 +1,7 @@
-const { exec } = require("child_process");
 const path = require("path");
+const fs = require("fs");
+const fetch = require("node-fetch");
 const InterviewSession = require("../models/InterviewSession");
-
-
 
 exports.processAudio = async (req, res) => {
   try {
@@ -14,54 +13,61 @@ exports.processAudio = async (req, res) => {
     const question = req.body.question;
     const sessionId = req.body.sessionId;
 
-if (!sessionId) {
-  return res.status(400).json({ error: "Session ID missing" });
-}
-
+    if (!sessionId) {
+      return res.status(400).json({ error: "Session ID missing" });
+    }
 
     console.log("🎤 Audio received:", audioPath);
     console.log("❓ Question:", question);
 
-    // Call Python Whisper script
-    exec(
-      `python whisper_transcribe.py "${audioPath}"`,
-      async (error, stdout, stderr) => {
-        if (error) {
-          console.error("Whisper error:", error);
-          return res.status(500).json({ error: "Transcription failed" });
-        }
+    // Read audio file as buffer
+    const audioBuffer = fs.readFileSync(audioPath);
 
-        const transcript = stdout.trim() || "";
-        console.log("📝 Transcript:", transcript);
-        let session = await InterviewSession.findOne({ sessionId });
+    // Send to Deepgram
+   const axios = require("axios");
 
-if (!session) {
-  session = new InterviewSession({
-    sessionId,
-    answers: [],
-  });
-}
+const response = await axios.post(
+  "https://api.deepgram.com/v1/listen",
+  audioBuffer,
+  {
+    headers: {
+      Authorization: `Token ${process.env.DEEPGRAM_API_KEY}`,
+      "Content-Type": "audio/webm",
+    },
+  }
+);
 
-session.answers.push({
-  question,
-  transcript,
-});
+const transcript =
+  response.data?.results?.channels?.[0]?.alternatives?.[0]?.transcript || "";
 
-await session.save();
+    console.log("📝 Transcript:", transcript);
 
-const fs = require("fs");
+    let session = await InterviewSession.findOne({ sessionId });
 
-fs.unlink(audioPath, () => {});
+    if (!session) {
+      session = new InterviewSession({
+        sessionId,
+        answers: [],
+      });
+    }
 
-return res.json({
-  success: true,
-  message: "Answer saved",
-});
+    session.answers.push({
+      question,
+      transcript,
+    });
 
-      }
-    );
+    await session.save();
+
+    // delete uploaded audio after processing
+    fs.unlink(audioPath, () => {});
+
+    return res.json({
+      success: true,
+      message: "Answer saved",
+      transcript,
+    });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+    console.error("Deepgram Error:", err);
+    res.status(500).json({ error: "Transcription failed" });
   }
 };
